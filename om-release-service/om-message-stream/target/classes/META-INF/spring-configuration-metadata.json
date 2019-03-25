@@ -1,0 +1,32 @@
+{
+  "hints": [],
+  "groups": [
+    {
+      "sourceType": "com.fa.cim.config.MessageConfig",
+      "name": "kafka.sender",
+      "type": "com.fa.cim.config.MessageConfig"
+    }
+  ],
+  "properties": [
+    {
+      "sourceType": "com.fa.cim.config.MessageConfig",
+      "name": "kafka.sender.bootstrap-servers",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.fa.cim.config.MessageConfig",
+      "name": "kafka.sender.group-id",
+      "type": "java.lang.String"
+    },
+    {
+      "sourceType": "com.fa.cim.config.MessageConfig",
+      "name": "kafka.sender.reply-timeout-ms",
+      "type": "java.lang.Long"
+    },
+    {
+      "sourceType": "com.fa.cim.config.MessageConfig",
+      "name": "kafka.sender.reply-topics",
+      "type": "java.lang.String[]"
+    }
+  ]
+}
