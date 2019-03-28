@@ -1,11 +1,9 @@
 package com.fa.cim.factory;
 
 import com.fa.cim.config.MessageConfig;
+import com.fa.cim.dto.CimMessageWrapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,10 +16,6 @@ import org.springframework.kafka.listener.KafkaMessageListenerContainer;
 import org.springframework.kafka.listener.config.ContainerProperties;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
-import org.springframework.kafka.support.serializer.JsonSerializer;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * description:
@@ -45,37 +39,37 @@ public class MessageTemplateFactory {
 	private MessageConfig config;
 
 	@Bean
-	public ReplyingKafkaTemplate<String, String, String> replyKafkaTemplate(ProducerFactory<String, String> pf,
-	                                                                    KafkaMessageListenerContainer<String, String> container) {
-		ReplyingKafkaTemplate<String, String, String> template = new ReplyingKafkaTemplate<>(pf, container);
+	public ReplyingKafkaTemplate<String, CimMessageWrapper, CimMessageWrapper> replyKafkaTemplate(ProducerFactory<String, CimMessageWrapper> pf,
+	                                                                                              KafkaMessageListenerContainer<String, CimMessageWrapper> container) {
+		ReplyingKafkaTemplate<String, CimMessageWrapper, CimMessageWrapper> template = new ReplyingKafkaTemplate<>(pf, container);
 		template.setReplyTimeout(config.getReplyTimeoutMs());
 		return template;
 	}
 	@Bean
-	public KafkaMessageListenerContainer<String, String> replyContainer(ConsumerFactory<String, String> cf) {
+	public KafkaMessageListenerContainer<String, CimMessageWrapper> replyContainer(ConsumerFactory<String, CimMessageWrapper> cf) {
 		ContainerProperties containerProperties = new ContainerProperties(config.getReplyTopics());
 		return new KafkaMessageListenerContainer<>(cf, containerProperties);
 	}
 	@Bean
-	public ProducerFactory<String, String> producerFactory() {
+	public ProducerFactory<String, CimMessageWrapper> producerFactory() {
 		return new DefaultKafkaProducerFactory<>(this.config.producerConfigs());
 	}
 
 	@Bean
-	public ConsumerFactory<String, String> consumerFactory() {
-		return new DefaultKafkaConsumerFactory<>(this.config.replyConsumerConfigs(),new StringDeserializer(), new StringDeserializer());
+	public ConsumerFactory<String, CimMessageWrapper> consumerFactory() {
+		return new DefaultKafkaConsumerFactory<>(this.config.replyConsumerConfigs(),new StringDeserializer(), new JsonDeserializer<>(CimMessageWrapper.class));
 	}
 
 	@Bean
-	public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> kafkaListenerContainerFactory() {
-		ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+	public KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, CimMessageWrapper>> kafkaListenerContainerFactory() {
+		ConcurrentKafkaListenerContainerFactory<String, CimMessageWrapper> factory = new ConcurrentKafkaListenerContainerFactory<>();
 		factory.setConsumerFactory(consumerFactory());
 		factory.setReplyTemplate(kafkaTemplate());
 		return factory;
 	}
 
 	@Bean
-	public KafkaTemplate<String, String> kafkaTemplate() {
+	public KafkaTemplate<String, CimMessageWrapper> kafkaTemplate() {
 		return new KafkaTemplate<>(producerFactory());
 	}
 }

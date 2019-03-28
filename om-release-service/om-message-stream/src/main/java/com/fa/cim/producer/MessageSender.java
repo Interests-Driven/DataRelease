@@ -1,26 +1,22 @@
 package com.fa.cim.producer;
 
-import com.alibaba.fastjson.JSONObject;
 import com.fa.cim.common.exception.ServiceException;
+import com.fa.cim.common.support.User;
 import com.fa.cim.config.MessageConfig;
-import com.fa.cim.factory.MessageTemplateFactory;
+import com.fa.cim.dto.CimMessage;
+import com.fa.cim.dto.CimMessageWrapper;
 import com.fa.cim.pojo.CimChannel;
 import com.fa.cim.pojo.CimSyncChannel;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.requestreply.ReplyingKafkaTemplate;
 import org.springframework.kafka.requestreply.RequestReplyFuture;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -44,7 +40,7 @@ import java.util.concurrent.TimeoutException;
 public class MessageSender {
 
 	@Autowired
-	private ReplyingKafkaTemplate<String, String, String> template;
+	private ReplyingKafkaTemplate<String, CimMessageWrapper, CimMessageWrapper> template;
 
 	@Autowired
 	private MessageConfig config;
@@ -55,8 +51,11 @@ public class MessageSender {
 	 * @param message M
 	 * @param <M> messageType
 	 */
-	public <M> void send (CimChannel channel, M message) {
-		ProducerRecord<String, String> producerRecord = this.createProducerRecord(channel, message);
+	public <M> void send (CimChannel channel,
+	                      String transactionID,
+	                      User user,
+	                      M message) {
+		ProducerRecord<String, CimMessageWrapper> producerRecord = this.createProducerRecord(channel,transactionID, user, message);
 		template.send(producerRecord)
 				.addCallback(result -> log.debug(String.format("Send Message Successfully [ %s ]", channel.toString())),
 						ex -> {
@@ -72,15 +71,23 @@ public class MessageSender {
 	 * @param <R> response Type
 	 * @return R
 	 */
-	public <M, R> R call (CimSyncChannel<R> channel, M message) {
+	public <M, R> R call (CimSyncChannel<R> channel,
+	                      String transactionID,
+	                      User user,
+	                      M message) {
 
-		ProducerRecord<String, String> producerRecord = this.createProducerRecord(channel, message);
+		ProducerRecord<String, CimMessageWrapper> producerRecord = this.createProducerRecord(channel, transactionID, user, message);
 		producerRecord.headers().add(new RecordHeader(KafkaHeaders.REPLY_TOPIC, channel.getReplyTopic().getBytes()));
+		Integer partition =  channel.getPartition();
+		if (null != partition) {
+			producerRecord.headers().add(new RecordHeader(KafkaHeaders.RECEIVED_PARTITION_ID, partition.toString().getBytes()));
+			producerRecord.headers().add(new RecordHeader(KafkaHeaders.REPLY_PARTITION, partition.toString().getBytes()));
+		}
 		R reply = null;
 		try {
-			RequestReplyFuture<String, String, String> requestFuture = template.sendAndReceive(producerRecord);
-			String replyStr = requestFuture.get(config.getReplyTimeoutMs(), TimeUnit.MILLISECONDS).value();
-			reply = JSONObject.parseObject(replyStr, channel.getReplyMessageClass());
+			RequestReplyFuture<String, CimMessageWrapper, CimMessageWrapper> requestFuture = template.sendAndReceive(producerRecord);
+			Object replyObj = requestFuture.get(config.getReplyTimeoutMs(), TimeUnit.MILLISECONDS).value().getResponse().getBody();
+			reply = channel.getReplyMessageClass().cast(replyObj);
 		} catch (TimeoutException  e) {
 			throw new ServiceException(String.format("Sender Calling Timeout by [ %d ms ] - Channel [ %s ]", config.getReplyTimeoutMs(), channel.toString()));
 		} catch (InterruptedException e) {
@@ -97,14 +104,16 @@ public class MessageSender {
 	 * @param message M
 	 * @return ProducerRecord
 	 */
-	private <M> ProducerRecord<String, String> createProducerRecord (CimChannel channel, M message) {
-		Object jsonObject = JSONObject.toJSON(message);
-		String outMessage = jsonObject.toString();
-		log.info("The message is " + outMessage);
+	private <M> ProducerRecord<String, CimMessageWrapper> createProducerRecord (CimChannel channel,
+	                                                                            String transactionID,
+	                                                                            User user,
+	                                                                            M message) {
+		CimMessage cimMessage = CimMessage.create(user, transactionID, message);
+		CimMessageWrapper cimMessageWrapper = CimMessageWrapper.create(cimMessage);
 		Integer partition = channel.getPartition();
 		return null == partition ?
-				new ProducerRecord<>(channel.getRequestTopic(), outMessage)
-				: new ProducerRecord<>(channel.getRequestTopic(), partition, null, outMessage);
+				new ProducerRecord<>(channel.getRequestTopic(), cimMessageWrapper)
+				: new ProducerRecord<>(channel.getRequestTopic(), partition, null, cimMessageWrapper);
 	}
 
 }

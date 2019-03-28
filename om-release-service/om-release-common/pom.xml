@@ -28,7 +28,7 @@
         <dependency>
             <groupId>com.fa.cim</groupId>
             <artifactId>om-dtos</artifactId>
-            <version>${project.version}</version>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
 
 

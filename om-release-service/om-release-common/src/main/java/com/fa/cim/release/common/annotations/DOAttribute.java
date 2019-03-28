@@ -1,5 +1,6 @@
 package com.fa.cim.release.common.annotations;
 
+import com.fa.cim.common.support.ObjectIdentifier;
 import com.fa.cim.release.common.annotations.repeatable.DOAttributes;
 
 import java.lang.annotation.*;
@@ -38,21 +39,22 @@ public @interface DOAttribute {
 	String toAttribute ();
 
 	/**
-	 * convert the attribute to a specific type;
+	 * convert the attribute to a specific returnType;
 	 * @return DOAttribute.Type
 	 */
 	Type convertTo () default Type.NONE;
 
 	enum Type {
 		NONE (null), // no conversion - default;
-		INT (Integer.TYPE), // convert to Integer - number type required;
-		LONG (Long.TYPE), // convert to Long - number type required;
-		SHORT (Short.TYPE), // convert to Short - number type required;
-		BYTE (Byte.TYPE), // convert to Byte - number type required;
-		DOUBLE (Double.TYPE), // convert to Double - number type required;
-		FLOAT (Float.TYPE), // convert Float - number type required;
+		INT (Integer.TYPE), // convert to Integer - number returnType required;
+		LONG (Long.TYPE), // convert to Long - number returnType required;
+		SHORT (Short.TYPE), // convert to Short - number returnType required;
+		BYTE (Byte.TYPE), // convert to Byte - number returnType required;
+		DOUBLE (Double.TYPE), // convert to Double - number returnType required;
+		FLOAT (Float.TYPE), // convert Float - number returnType required;
 		BOOLEAN (Boolean.TYPE), // convert to Boolean - Short required;
-		STRING (String.class) // convert to String - call toString () of the Object;
+		STRING (String.class), // convert to String - call toString () of the Object;
+		OBJECT_IDENTIFIER (ObjectIdentifier.class)
 		;
 		Class<?> classType;
 

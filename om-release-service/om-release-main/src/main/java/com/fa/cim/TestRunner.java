@@ -1,26 +1,9 @@
 package com.fa.cim;
 
-import antlr.debug.MessageListener;
-import com.fa.cim.core.bo.pcdmg.CimCategory;
-import com.fa.cim.core.bo.pcdmg.CodeManager;
-import com.fa.cim.core.bo.pprmg.CimLotType;
-import com.fa.cim.core.bo.pprmg.ProductManager;
-import com.fa.cim.dto.Result;
-import com.fa.cim.dto.User;
-import com.fa.cim.entity.CimCategoryDO;
-import com.fa.cim.entity.CimCodeDO;
-import com.fa.cim.entity.CimE10StateDO;
-import com.fa.cim.entity.lottype.CimLotTypeDO;
-import com.fa.cim.entity.lottype.CimLotTypeSubLotTypeDO;
-import com.fa.cim.entity.persongroup.CimPersonGroupDO;
-import com.fa.cim.factory.core.CodeBOFactory;
+import com.fa.cim.dto.code.EquipmentStateConversionDTO;
+import com.fa.cim.dto.code.EquipmentStateDTO;
 import com.fa.cim.factory.core.ProductBOFactory;
-import com.fa.cim.pojo.CimSyncChannel;
-import com.fa.cim.producer.MessageSender;
-import com.fa.cim.release.dto.CompanyDTO;
-import com.fa.cim.release.dto.EquipmentStateDTO;
-import com.fa.cim.release.dto.RelationDTO;
-import com.fa.cim.release.service.api.basic.DefaultBOReleaseService;
+import com.fa.cim.release.common.service.api.basic.DefaultBOReleaseService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -28,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * description:
@@ -46,20 +30,71 @@ import java.util.List;
 @Slf4j
 public class TestRunner implements CommandLineRunner {
 
-	private short TRUE = 1;
-	private short FALSE = 0;
+	@Autowired
+	private DefaultBOReleaseService releaseService;
 
 	@Autowired
-	private MessageSender messageSender;
+	private ProductBOFactory productBOFactory;
 
 	@Override
 	public void run(String... args) throws Exception {
 
-		CimSyncChannel<Result> cimSyncChannel = new CimSyncChannel<>("RELEASE-REQ-TEST-05", "RELEASE-RSP-TEST-05", Result.class);
+//		ProductManager manager = productBOFactory.getBOInstance(ProductBOFactory.CLASS_PRODUCT_MANAGER);
+//
+//		CimLotTypeDO lotTypeDO = new CimLotTypeDO();
+//		lotTypeDO.setLotTypeID("PROD");
+//		lotTypeDO.setLotType("PROD");
+//		lotTypeDO.setLatestUsedNumber(1);
+//		lotTypeDO.setDescription("Some Description");
+//
+//		lotTypeDO = (CimLotTypeDO) manager.save(lotTypeDO);
+//
+//		CimLotTypeSubLotTypeDO subLotTypeDO = new CimLotTypeSubLotTypeDO();
+//		subLotTypeDO.setSubLotType("PROD-EN");
+//		subLotTypeDO.setReferenceKey(lotTypeDO.getId());
+//		subLotTypeDO.setLeadingChar("K");
+//		subLotTypeDO.setDescription("Some Description");
+//		subLotTypeDO.setDuration(100);
+//		manager.save(subLotTypeDO);
+//
+//		subLotTypeDO.setSubLotType("PROD-QT");
+//		subLotTypeDO.setId(null);
+//		manager.save(subLotTypeDO);
 
-//		messageSender.send(cimSyncChannel, new User());
+		List<String> nextEqpst = new ArrayList<>(3);
+		nextEqpst.add("ST");
+		nextEqpst.add("EQ");
 
-		Result result = messageSender.call(cimSyncChannel, new User());
-		log.info("The result received is ----------> " + result.isSuccessFlag());
+		List<String> sublotTypes = new ArrayList<>(2);
+		sublotTypes.add("PROD-QT");
+		sublotTypes.add("PROD-EN");
+
+		List<EquipmentStateConversionDTO> list = new ArrayList<>(2);
+		EquipmentStateConversionDTO con1 = new EquipmentStateConversionDTO();
+		con1.setAttributeValue("123");
+		con1.setCheckSequence("kkk");
+		con1.setConvertingLogic("logic");
+		con1.setToEquipmentStateCode("SI");
+		list.add(con1);
+		EquipmentStateConversionDTO con2 = new EquipmentStateConversionDTO();
+		con2.setAttributeValue("123");
+		con2.setCheckSequence("kkk");
+		con2.setConvertingLogic("logic");
+		con2.setToEquipmentStateCode("SO");
+		list.add(con2);
+		EquipmentStateDTO dto = new EquipmentStateDTO();
+		dto.setE10State("ENG");
+		dto.setEqpStateDesc("Some Description");
+		dto.setAvailableSubLotTypes(sublotTypes);
+		dto.setChangeFromOtherE10Flag(true);
+		dto.setChangeToOtherE10Flag(true);
+		dto.setConditionalAvailableFlag(true);
+		dto.setManufacturingStateChangeableFlag(false);
+		dto.setEquipmentAvailableFlag(true);
+		dto.setEquipmentStateCode("STB");
+		dto.setEquipmentStateName("DDK");
+		dto.setNextTransitionStates(nextEqpst);
+		dto.setConvertingConditions(list);
+		releaseService.release(dto);
 	}
 }

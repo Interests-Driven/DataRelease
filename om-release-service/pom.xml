@@ -20,28 +20,8 @@
         <module>om-release-main</module>
         <module>om-release-common</module>
     </modules>
-
     <name>om-release-service</name>
     <description>standalone release micro service</description>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-dependencies</artifactId>
-            <version>${spring-cloud.version}</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.12</version>
-        </dependency>
-
-
-
-    </dependencies>
 
     <properties>
         <java.version>1.8</java.version>
@@ -54,6 +34,38 @@
         <fastjson-version>1.2.16</fastjson-version>
         <commons-dbcp2.version>2.1.1</commons-dbcp2.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fa.cim</groupId>
+                <artifactId>om-mds-dto</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fa.cim</groupId>
+                <artifactId>om-message-stream</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fa.cim</groupId>
+                <artifactId>om-release-main</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fa.cim</groupId>
+                <artifactId>om-release-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
